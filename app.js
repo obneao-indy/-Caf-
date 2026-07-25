@@ -1,29 +1,33 @@
 "use strict";
 
 const CONFIG = {
-  storageKey: "cafe-juju-experience-incident-v1",
+  storageKey: "cafe-juju-experience-incident-v2",
   soundHorrorLink: "",
   assets: {
     end1Audio: "./assets/digicam_last_voice.mp3",
-    end2Audio: "./assets/red_mantle_chase.mp3",
+    end2Audios: [
+      "./assets/am-chase.mp3",
+      "./assets/am-detected.mp3",
+      "./assets/am-scream.wav"
+    ],
     titleLogo: "./assets/title-logo.png"
   },
   altar: {
-    code: "SR-A00"
+    code: "SR804"
   },
   inspections: [
-    { code: "1F-A01", floor: "1F", name: "客席テーブル", resultText: "客席テーブルを点検しました。\n異常なし。" },
-    { code: "1F-A02", floor: "1F", name: "階段扉", resultText: "階段扉を点検しました。\n異常なし。" },
-    { code: "1F-A03", floor: "1F", name: "クマのぬいぐるみ", resultText: "クマのぬいぐるみを点検しました。\n異常なし。" },
-    { code: "1F-A04", floor: "1F", name: "青い時計", resultText: "青い時計を点検しました。\n異常なし。" },
-    { code: "1F-A05", floor: "1F", name: "絵本", resultText: "絵本を点検しました。\n異常なし。" },
-    { code: "1F-A06", floor: "1F", name: "緑のカーテン", resultText: "緑のカーテンを点検しました。\n異常なし。" },
-    { code: "2F-A01", floor: "2F", name: "白いキャビネット", resultText: "白いキャビネットを点検しました。\n異常なし。" },
-    { code: "2F-A02", floor: "2F", name: "客席テーブル", resultText: "2階の客席テーブルを点検しました。\n異常なし。" },
-    { code: "2F-A03", floor: "2F", name: "生き人形", resultText: "生き人形を点検しました。\n異常なし。" },
-    { code: "2F-A04", floor: "2F", name: "マグロ", resultText: "マグロを点検しました。\n異常なし。" },
-    { code: "2F-A05", floor: "2F", name: "サウンドルーム入り口", resultText: "サウンドルーム入り口を点検しました。\n異常なし。" },
-    { code: "2F-A06", floor: "2F", name: "展示棚③", resultText: "展示棚③を点検しました。\n異常なし。" }
+    { code: "KT417", floor: "1F", name: "客席テーブル", resultText: "客席テーブルを点検しました。\n異常なし。" },
+    { code: "NX092", floor: "1F", name: "階段扉", resultText: "階段扉を点検しました。\n異常なし。" },
+    { code: "VC681", floor: "1F", name: "クマのぬいぐるみ", resultText: "クマのぬいぐるみを点検しました。\n異常なし。" },
+    { code: "RM538", floor: "1F", name: "青い時計", resultText: "青い時計を点検しました。\n異常なし。" },
+    { code: "BL739", floor: "1F", name: "絵本", resultText: "絵本を点検しました。\n異常なし。" },
+    { code: "YH246", floor: "1F", name: "緑のカーテン", resultText: "緑のカーテンを点検しました。\n異常なし。" },
+    { code: "DF964", floor: "2F", name: "白いキャビネット", resultText: "白いキャビネットを点検しました。\n異常なし。" },
+    { code: "MQ180", floor: "2F", name: "客席テーブル", resultText: "2階の客席テーブルを点検しました。\n異常なし。" },
+    { code: "TV503", floor: "2F", name: "生き人形", resultText: "生き人形を点検しました。\n異常なし。" },
+    { code: "AR725", floor: "2F", name: "マグロ", resultText: "マグロを点検しました。\n異常なし。" },
+    { code: "HW691", floor: "2F", name: "サウンドルーム入り口", resultText: "サウンドルーム入り口を点検しました。\n異常なし。" },
+    { code: "ZK358", floor: "2F", name: "展示棚③", resultText: "展示棚③を点検しました。\n異常なし。" }
   ],
   additionalRecord: `追加点検記録
 
@@ -61,13 +65,13 @@ const ENDINGS = {
 
 const app = document.querySelector("#app");
 const toast = document.querySelector("#toast");
+const inspectionByKey = new Map(CONFIG.inspections.map((item) => [normalizeCode(item.code), item]));
+const inspectionByCode = new Map(CONFIG.inspections.map((item) => [item.code, item]));
+
 let state = loadState();
 let lastMessage = "";
 let busy = false;
 let currentAudio = null;
-
-const inspectionByKey = new Map(CONFIG.inspections.map((item) => [normalizeCode(item.code), item]));
-const inspectionByCode = new Map(CONFIG.inspections.map((item) => [item.code, item]));
 
 render();
 
@@ -100,7 +104,7 @@ function saveState() {
 }
 
 function normalizeCode(value) {
-  return String(value || "").trim().toUpperCase().replace(/[\s-]+/g, "");
+  return String(value || "").trim().toUpperCase().replace(/\s+/g, "");
 }
 
 function discoveredCount() {
@@ -116,9 +120,7 @@ function hasEnding(id) {
 }
 
 function addEnding(id) {
-  if (!hasEnding(id)) {
-    state.viewedEndings.push(id);
-  }
+  if (!hasEnding(id)) state.viewedEndings.push(id);
   state.completionStampGranted = true;
 }
 
@@ -141,32 +143,32 @@ function bind(selector, event, handler) {
   if (node) node.addEventListener(event, handler);
 }
 
+function render() {
+  if (!state.started) {
+    renderStart();
+    return;
+  }
+  renderHome(lastMessage);
+}
+
 function startGame() {
   state.started = true;
   saveState();
-  renderMain("店内の点検対象付近に貼られた管理番号をご確認ください。");
+  renderHome("管理番号を入力してください。");
 }
 
-function render() {
-  if (!state.started) {
-    renderIntro();
-    return;
-  }
-  renderMain(lastMessage);
-}
-
-function renderIntro() {
+function renderStart() {
   setView(`
     <section class="hero">
       <div class="hero-inner">
         <p class="kicker">Caféジュジュ</p>
-        <h1 class="title">スタッフ体験</h1>
+        <h1 class="title">体験事件</h1>
         <p class="body-text">店内に設置された管理番号を探し、<br>点検業務を完了してください。</p>
         <p class="body-text">12か所のうち、5か所を点検すると<br>業務完了イベントが発生します。</p>
         <p class="body-text">所要時間：約5～10分</p>
         <p class="body-text">スタッフへの声かけは必要ありません。<br>展示物には触れないでください。</p>
         <div class="actions">
-          <button id="start">スタッフ体験を開始する</button>
+          <button id="start" type="button">スタッフ体験を開始する</button>
         </div>
       </div>
     </section>
@@ -174,60 +176,38 @@ function renderIntro() {
   bind("#start", "click", startGame);
 }
 
-function renderHeader() {
-  return `
-    <header class="topbar">
-      <div class="top-title">
-        <h1>体験事件</h1>
-        ${state.completionStampGranted ? `<span class="stamp">体験完了スタンプ</span>` : ""}
-      </div>
-      <p class="subhead">店内点検業務</p>
-    </header>
-  `;
-}
-
-function renderStats() {
-  const remainingToCall = Math.max(0, 5 - discoveredCount());
-  const completeLabel = state.allInspectionPointsCompleted ? "ALL CHECKED" : `業務完了まで あと${remainingToCall}件`;
-  return `
-    <section class="terminal section">
-      <h2>進行状況</h2>
-      <div class="progress-grid">
-        <div class="stat"><b>${discoveredCount()} / ${CONFIG.inspections.length}</b><span>点検済み</span></div>
-        <div class="stat"><b>${endingCount()} / 3</b><span>エンディング</span></div>
-      </div>
-      <p class="hint">${completeLabel}</p>
-    </section>
-  `;
-}
-
-function renderMain(message = "") {
+function renderHome(message = "") {
   updateAllChecked();
   saveState();
   const msg = message || "管理番号を入力してください。";
   setView(`
     <div class="altar-bg">
-      <section class="screen">
-        ${renderHeader()}
-        ${renderStats()}
-        <section class="terminal section">
+      <section class="screen home-screen">
+        <header class="home-header">
+          <img src="${CONFIG.assets.titleLogo}" alt="体験事件" class="home-logo">
+          <p class="subhead">店内点検業務</p>
+        </header>
+        <section class="terminal section input-panel">
           <h2>管理番号入力</h2>
           <form id="entry" class="entry">
-            <input id="code" class="code-input" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" placeholder="管理番号を入力してください">
+            <input id="code" class="code-input" type="text" inputmode="text" maxlength="5" autocomplete="off" autocapitalize="characters" placeholder="AA000">
             <button type="submit">点検する</button>
           </form>
-          <p class="hint">店内の点検対象付近に貼られた管理番号をご確認ください。</p>
-          <div class="message ${msg.includes("見つかりません") ? "error" : msg.includes("確認しました") || msg.includes("点検しました") ? "good" : ""}">${escapeHtml(msg)}</div>
+          <div class="message ${messageClass(msg)}">${escapeHtml(msg)}</div>
         </section>
         ${renderChecklist()}
-        ${renderAfterClearActions()}
-        ${renderAdditionalGuide()}
-        ${renderEndingStatus()}
+        ${renderMenu()}
       </section>
     </div>
   `, "app");
   bind("#entry", "submit", onSubmitCode);
   bind("#retry-call", "click", () => renderCall());
+}
+
+function messageClass(message) {
+  if (message.includes("見つかりません")) return "error";
+  if (message.includes("確認しました") || message.includes("点検しました") || message.includes("完了")) return "good";
+  return "";
 }
 
 function renderChecklist() {
@@ -240,59 +220,26 @@ function renderChecklist() {
     discovered.push(`<li class="checked"><span class="check">✓</span><span>あかいへや</span></li>`);
   }
 
-  const blanks = Array.from({ length: Math.max(0, CONFIG.inspections.length - state.discoveredInspectionCodes.length) }, () =>
-    `<li><span class="check"></span><span>未確認</span></li>`
-  );
+  const content = discovered.length
+    ? discovered.join("")
+    : `<li><span class="check"></span><span>未記録</span></li>`;
 
   return `
-    <section class="terminal section">
+    <section class="terminal section checklist-panel">
       <h2>点検記録</h2>
-      <ul class="check-list">${[...discovered, ...blanks].join("")}</ul>
+      <ul class="check-list">${content}</ul>
     </section>
   `;
 }
 
-function renderAfterClearActions() {
+function renderMenu() {
   if (endingCount() === 0) return "";
   return `
-    <section class="terminal section">
-      <h2>業務完了</h2>
-      <p class="body-text">点検済み ${discoveredCount()} / ${CONFIG.inspections.length}<br>エンディング ${endingCount()} / 3</p>
-      <div class="actions">
-        <button class="secondary" type="button" onclick="renderMain('点検を続行します。')">点検を続ける</button>
-        <button id="retry-call" type="button">別のエンディングを見る</button>
+    <section class="terminal section menu-panel">
+      <h2>メニュー</h2>
+      <div class="actions compact-actions">
+        <button id="retry-call" type="button">着信を再確認する</button>
       </div>
-    </section>
-  `;
-}
-
-function renderAdditionalGuide() {
-  const link = CONFIG.soundHorrorLink
-    ? `<div class="actions"><a class="button-link" href="${CONFIG.soundHorrorLink}">サウンドホラー案内</a></div>`
-    : "";
-  return `
-    <section class="terminal section">
-      <h2>追加コンテンツ</h2>
-      <p class="body-text">サウンドホラーをご注文の上、<br>サウンドルーム内の祭壇に記載された<br>管理番号を入力してください。</p>
-      <p class="body-text">追加コンテンツをお読みいただけます。</p>
-      <p class="hint">サウンドホラーは店頭でご注文いただけます。</p>
-      ${link}
-    </section>
-  `;
-}
-
-function renderEndingStatus() {
-  const labels = state.viewedEndings.map((id) => ENDINGS[id].title);
-  const complete = discoveredCount() === CONFIG.inspections.length && endingCount() === 3;
-  return `
-    <section class="terminal section">
-      <h2>エンディング収集状況</h2>
-      <div class="meta-row">
-        <span class="pill">エンディング ${endingCount()} / 3</span>
-        <span class="pill">点検済み ${discoveredCount()} / ${CONFIG.inspections.length}</span>
-        ${complete ? `<span class="pill">COMPLETE</span>` : ""}
-      </div>
-      <p class="hint">${labels.length ? labels.map(escapeHtml).join(" / ") : "未取得"}</p>
     </section>
   `;
 }
@@ -300,12 +247,12 @@ function renderEndingStatus() {
 function onSubmitCode(event) {
   event.preventDefault();
   if (busy) return;
+
   const input = document.querySelector("#code");
-  const raw = input.value;
-  const key = normalizeCode(raw);
+  const key = normalizeCode(input.value);
 
   if (!key) {
-    renderMain("管理番号を入力してください。");
+    renderHome("管理番号を入力してください。");
     return;
   }
 
@@ -316,23 +263,22 @@ function onSubmitCode(event) {
 
   const item = inspectionByKey.get(key);
   if (!item) {
-    renderMain("該当する管理番号が見つかりません。");
+    renderHome("該当する管理番号が見つかりません。");
     return;
   }
 
   if (state.discoveredInspectionCodes.includes(item.code)) {
-    renderMain(`${displayName(item)}は点検済みです。`);
+    renderHome(`${displayName(item)}は点検済みです。`);
     return;
   }
 
   state.discoveredInspectionCodes.push(item.code);
+  lastMessage = item.resultText;
   updateAllChecked();
-  const count = discoveredCount();
-  lastMessage = `${item.resultText}\n\n点検済み ${count} / ${CONFIG.inspections.length}`;
   saveState();
-  renderMain(lastMessage);
+  renderHome(lastMessage);
 
-  if (count === 5 && !state.autoCallTriggered && !hasEnding("END_1") && !hasEnding("END_2")) {
+  if (discoveredCount() === 5 && !state.autoCallTriggered && !hasEnding("END_1") && !hasEnding("END_2")) {
     state.autoCallTriggered = true;
     saveState();
     busy = true;
@@ -341,8 +287,8 @@ function onSubmitCode(event) {
       busy = false;
       renderCall();
     }, 1400);
-  } else if (count === CONFIG.inspections.length) {
-    showToast("全点検項目を確認しました。\n点検済み 12 / 12\nALL CHECKED");
+  } else if (state.allInspectionPointsCompleted) {
+    showToast("全点検項目を確認しました。\nALL CHECKED");
   }
 }
 
@@ -398,14 +344,13 @@ async function startEnd1() {
   }, 800);
 }
 
-async function startEnd2() {
+function startEnd2() {
   if (busy) return;
   busy = true;
   const overlay = document.createElement("div");
   overlay.className = "red-room active";
-  overlay.innerHTML = "<span>あかいへや</span>";
   document.body.appendChild(overlay);
-  playConfiguredAudio(CONFIG.assets.end2Audio, 3300);
+  playAudioLayer(CONFIG.assets.end2Audios);
   setTimeout(() => {
     stopAudio();
     overlay.remove();
@@ -424,13 +369,16 @@ function unlockAdditionalRecord() {
   saveState();
   setView(`
     <div class="altar-bg">
-      <section class="screen">
-        ${renderHeader()}
+      <section class="screen record-screen">
+        <header class="topbar">
+          <div class="top-title"><h1>体験事件</h1></div>
+          <p class="subhead">追加点検記録</p>
+        </header>
         <section class="terminal section">
           <h2>祭壇の点検記録が見つかりました。</h2>
           <p class="body-text">追加点検記録を表示します。</p>
         </section>
-        <section class="terminal section">
+        <section class="terminal section record-panel">
           <div class="record">${escapeHtml(CONFIG.additionalRecord)}</div>
         </section>
         <section class="terminal section">
@@ -448,19 +396,46 @@ function unlockAdditionalRecord() {
 
 function renderEnding(id) {
   const ending = ENDINGS[id];
+  const needsGuide = id === "END_1" || id === "END_2";
   setView(`
     <section class="screen ending">
       <div class="ending-code">${ending.code}</div>
       <h1>${ending.title}</h1>
       <div class="clear">${ending.result}</div>
-      <div class="actions">
-        <button id="back-main" type="button">点検画面へ戻る</button>
+      <div class="actions ending-actions ${needsGuide ? "hidden" : ""}">
+        <button id="back-main" type="button">ホームへ戻る</button>
         ${id !== "END_3" ? `<button id="retry-call" class="secondary" type="button">別のエンディングを見る</button>` : ""}
       </div>
+      ${needsGuide ? renderAdditionalPopup() : ""}
     </section>
   `);
-  bind("#back-main", "click", () => renderMain(id === "END_2" ? "業務を終了します。" : "業務完了"));
+  bind("#back-main", "click", () => renderHome(id === "END_2" ? "業務を終了します。" : "業務完了"));
   bind("#retry-call", "click", () => renderCall());
+  bind("#close-guide", "click", closeAdditionalPopup);
+}
+
+function renderAdditionalPopup() {
+  const link = CONFIG.soundHorrorLink
+    ? `<a class="button-link" href="${CONFIG.soundHorrorLink}">サウンドホラー案内</a>`
+    : "";
+  return `
+    <div class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="guide-title">
+      <div class="modal">
+        <h2 id="guide-title">追加コンテンツ</h2>
+        <p class="body-text">サウンドホラーをご注文の上、<br>サウンドルーム内の祭壇に記載された<br>管理番号を入力してください。</p>
+        <p class="hint">追加点検記録をお読みいただけます。</p>
+        ${link}
+        <button id="close-guide" type="button">確認した</button>
+      </div>
+    </div>
+  `;
+}
+
+function closeAdditionalPopup() {
+  const modal = document.querySelector(".modal-backdrop");
+  const actions = document.querySelector(".ending-actions");
+  if (modal) modal.remove();
+  if (actions) actions.classList.remove("hidden");
 }
 
 function playConfiguredAudio(path, fallbackMs) {
@@ -490,10 +465,23 @@ function playConfiguredAudio(path, fallbackMs) {
   });
 }
 
+function playAudioLayer(paths) {
+  stopAudio();
+  currentAudio = paths.map((path) => {
+    const audio = new Audio(path);
+    audio.volume = 1;
+    audio.play().catch(() => {});
+    return audio;
+  });
+}
+
 function stopAudio() {
   if (!currentAudio) return;
-  currentAudio.pause();
-  currentAudio.currentTime = 0;
+  const audios = Array.isArray(currentAudio) ? currentAudio : [currentAudio];
+  audios.forEach((audio) => {
+    audio.pause();
+    audio.currentTime = 0;
+  });
   currentAudio = null;
 }
 

@@ -106,6 +106,15 @@ button.ghost {
   padding: max(18px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
 }
 
+.home-screen {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 10px;
+  height: 100svh;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .hero {
   display: grid;
   align-content: end;
@@ -117,7 +126,7 @@ button.ghost {
 }
 
 .hero-inner {
-  padding: 42svh 16px max(24px, env(safe-area-inset-bottom));
+  padding: 38svh 16px max(24px, env(safe-area-inset-bottom));
 }
 
 .brand-logo {
@@ -154,6 +163,14 @@ button.ghost {
   margin-top: 20px;
 }
 
+.compact-actions {
+  margin-top: 0;
+}
+
+.hidden {
+  display: none !important;
+}
+
 .topbar {
   position: sticky;
   top: 0;
@@ -163,6 +180,21 @@ button.ghost {
   background: rgba(8, 8, 8, 0.92);
   border-bottom: 1px solid rgba(255,255,255,0.08);
   backdrop-filter: blur(12px);
+}
+
+.home-header {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding-top: 4px;
+}
+
+.home-logo {
+  display: block;
+  width: min(86%, 330px);
+  max-height: 106px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 14px rgba(180, 0, 0, 0.54));
 }
 
 .top-title {
@@ -205,6 +237,10 @@ button.ghost {
   padding: 14px;
 }
 
+.home-screen .section {
+  margin-top: 0;
+}
+
 .section h2 {
   margin: 0 0 10px;
   font-size: 16px;
@@ -238,6 +274,7 @@ button.ghost {
 
 .entry {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) 104px;
   gap: 9px;
 }
 
@@ -260,15 +297,21 @@ button.ghost {
 }
 
 .message {
-  min-height: 70px;
+  min-height: 58px;
   margin-top: 12px;
-  padding: 12px;
+  padding: 10px;
   border-left: 3px solid var(--blue);
   background: rgba(145,183,255,0.08);
   color: var(--ink);
   font-size: 14px;
   line-height: 1.75;
   white-space: pre-line;
+}
+
+.input-panel h2,
+.checklist-panel h2,
+.menu-panel h2 {
+  font-size: 14px;
 }
 
 .message.error {
@@ -283,7 +326,7 @@ button.ghost {
 
 .check-list {
   display: grid;
-  gap: 7px;
+  gap: 4px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -293,9 +336,20 @@ button.ghost {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 32px;
+  min-height: 29px;
   border-bottom: 1px solid rgba(255,255,255,0.06);
   color: var(--muted);
+}
+
+.checklist-panel {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.checklist-panel .check-list {
+  max-height: 100%;
+  overflow-y: auto;
+  padding-right: 2px;
 }
 
 .check-list li.checked {
@@ -381,6 +435,17 @@ button.ghost {
   text-align: center;
 }
 
+.ending::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0.45), #080808 82%),
+    url("./assets/title-logo.png") center 16% / cover no-repeat;
+  opacity: 0.32;
+}
+
 .ending-code {
   color: var(--red-2);
   font-size: 15px;
@@ -439,14 +504,6 @@ button.ghost {
   animation: mildPulse 0.9s ease-in-out infinite;
 }
 
-.red-room span {
-  position: relative;
-  z-index: 1;
-  font-size: 22px;
-  font-weight: 900;
-  text-shadow: 0 2px 16px #000;
-}
-
 .toast {
   position: fixed;
   left: 16px;
@@ -464,6 +521,45 @@ button.ghost {
   box-shadow: 0 12px 36px rgba(0,0,0,0.55);
   font-size: 13px;
   line-height: 1.55;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(0,0,0,0.78);
+}
+
+.modal {
+  width: min(100%, 420px);
+  border: 1px solid rgba(255,255,255,0.16);
+  border-radius: 7px;
+  padding: 18px;
+  background: rgba(14,14,14,0.98);
+  box-shadow: 0 22px 70px rgba(0,0,0,0.7);
+}
+
+.modal h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+
+.modal button,
+.modal .button-link {
+  margin-top: 14px;
+  width: 100%;
+}
+
+.record-screen {
+  padding-bottom: 18px;
+}
+
+.record-panel {
+  max-height: 48svh;
+  overflow-y: auto;
 }
 
 .toast.show {
