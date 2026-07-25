@@ -72,6 +72,7 @@ let state = loadState();
 let lastMessage = "";
 let busy = false;
 let currentAudio = null;
+let currentRinger = null;
 
 render();
 
@@ -144,36 +145,41 @@ function bind(selector, event, handler) {
 }
 
 function render() {
-  if (!state.started) {
-    renderStart();
-    return;
-  }
-  renderHome(lastMessage);
+  renderTitle();
 }
 
 function startGame() {
   state.started = true;
   saveState();
-  renderHome("管理番号を入力してください。");
+  renderIntro();
 }
 
-function renderStart() {
+function renderTitle() {
   setView(`
-    <section class="hero">
-      <div class="hero-inner">
-        <p class="kicker">Caféジュジュ</p>
-        <h1 class="title">体験事件</h1>
-        <p class="body-text">店内に設置された管理番号を探し、<br>点検業務を完了してください。</p>
-        <p class="body-text">12か所のうち、5か所を点検すると<br>業務完了イベントが発生します。</p>
-        <p class="body-text">所要時間：約5～10分</p>
-        <p class="body-text">スタッフへの声かけは必要ありません。<br>展示物には触れないでください。</p>
-        <div class="actions">
-          <button id="start" type="button">スタッフ体験を開始する</button>
-        </div>
+    <section class="title-screen">
+      <div class="title-visual" aria-label="体験事件"></div>
+      <div class="title-actions">
+        <button id="start" type="button">スタート</button>
+        ${endingCount() > 0 ? `<button id="receive-call" class="secondary" type="button">着信を受ける</button>` : ""}
       </div>
     </section>
   `, "app");
   bind("#start", "click", startGame);
+  bind("#receive-call", "click", () => renderCall());
+}
+
+function renderIntro() {
+  setView(`
+    <section class="intro-screen">
+      <p class="intro-copy">店内に設置された管理番号を探し、チェックリストに入力して点検業務を完了してください。<br><br>五か所点検すると業務を完了できます。<br><br>所要時間：5～10分</p>
+      <button id="begin-work" class="intro-button hidden" type="button">スタッフ体験を開始する</button>
+    </section>
+  `, "app");
+  setTimeout(() => {
+    const button = document.querySelector("#begin-work");
+    if (button) button.classList.remove("hidden");
+  }, 900);
+  bind("#begin-work", "click", () => renderHome("管理番号を入力してください。"));
 }
 
 function renderHome(message = "") {
@@ -183,6 +189,7 @@ function renderHome(message = "") {
   setView(`
     <div class="altar-bg">
       <section class="screen home-screen">
+        <button id="home-button" class="home-button" type="button" aria-label="タイトルへ戻る">ホーム</button>
         <header class="home-header">
           <img src="${CONFIG.assets.titleLogo}" alt="体験事件" class="home-logo">
           <p class="subhead">店内点検業務</p>
@@ -196,12 +203,11 @@ function renderHome(message = "") {
           <div class="message ${messageClass(msg)}">${escapeHtml(msg)}</div>
         </section>
         ${renderChecklist()}
-        ${renderMenu()}
       </section>
     </div>
   `, "app");
   bind("#entry", "submit", onSubmitCode);
-  bind("#retry-call", "click", () => renderCall());
+  bind("#home-button", "click", renderHomeConfirm);
 }
 
 function messageClass(message) {
@@ -216,10 +222,6 @@ function renderChecklist() {
     .filter(Boolean)
     .map((item) => `<li class="checked"><span class="check">✓</span><span>${escapeHtml(displayName(item))}</span></li>`);
 
-  if (state.redRoomExperienced) {
-    discovered.push(`<li class="checked"><span class="check">✓</span><span>あかいへや</span></li>`);
-  }
-
   const content = discovered.length
     ? discovered.join("")
     : `<li><span class="check"></span><span>未記録</span></li>`;
@@ -228,18 +230,6 @@ function renderChecklist() {
     <section class="terminal section checklist-panel">
       <h2>点検記録</h2>
       <ul class="check-list">${content}</ul>
-    </section>
-  `;
-}
-
-function renderMenu() {
-  if (endingCount() === 0) return "";
-  return `
-    <section class="terminal section menu-panel">
-      <h2>メニュー</h2>
-      <div class="actions compact-actions">
-        <button id="retry-call" type="button">着信を再確認する</button>
-      </div>
     </section>
   `;
 }
@@ -294,6 +284,8 @@ function onSubmitCode(event) {
 
 function renderCall() {
   stopAudio();
+  startRinging();
+  startVibration();
   setView(`
     <section class="call-screen">
       <div class="caller">
@@ -314,19 +306,17 @@ function renderCall() {
 async function startEnd1() {
   if (busy) return;
   busy = true;
+  stopRinging();
+  stopVibration();
   setView(`
     <section class="call-screen">
       <div class="caller">
         <div class="caller-status">通話中</div>
         <h1 class="caller-name">発信者不明</h1>
         <p class="caller-note">音声再生中</p>
-        <div class="actions">
-          <button id="stop-audio" class="secondary" type="button">音声を停止する</button>
-        </div>
       </div>
     </section>
   `, "app");
-  bind("#stop-audio", "click", stopAudio);
   await playConfiguredAudio(CONFIG.assets.end1Audio, 2600);
   stopAudio();
   setView(`
@@ -347,6 +337,8 @@ async function startEnd1() {
 function startEnd2() {
   if (busy) return;
   busy = true;
+  stopRinging();
+  stopVibration();
   const overlay = document.createElement("div");
   overlay.className = "red-room active";
   document.body.appendChild(overlay);
@@ -360,7 +352,7 @@ function startEnd2() {
     busy = false;
     lastMessage = "業務を終了します。";
     renderEnding("END_2");
-  }, 3300);
+  }, 6300);
 }
 
 function unlockAdditionalRecord() {
@@ -396,22 +388,23 @@ function unlockAdditionalRecord() {
 
 function renderEnding(id) {
   const ending = ENDINGS[id];
-  const needsGuide = id === "END_1" || id === "END_2";
   setView(`
     <section class="screen ending">
       <div class="ending-code">${ending.code}</div>
       <h1>${ending.title}</h1>
       <div class="clear">${ending.result}</div>
-      <div class="actions ending-actions ${needsGuide ? "hidden" : ""}">
-        <button id="back-main" type="button">ホームへ戻る</button>
-        ${id !== "END_3" ? `<button id="retry-call" class="secondary" type="button">別のエンディングを見る</button>` : ""}
+      <div class="actions ending-actions">
+        <button id="back-main" type="button">タイトルへ</button>
       </div>
-      ${needsGuide ? renderAdditionalPopup() : ""}
     </section>
   `);
-  bind("#back-main", "click", () => renderHome(id === "END_2" ? "業務を終了します。" : "業務完了"));
-  bind("#retry-call", "click", () => renderCall());
-  bind("#close-guide", "click", closeAdditionalPopup);
+  bind("#back-main", "click", () => {
+    if (id === "END_1" || id === "END_2") {
+      showAdditionalPopupBeforeTitle();
+      return;
+    }
+    renderTitle();
+  });
 }
 
 function renderAdditionalPopup() {
@@ -436,6 +429,38 @@ function closeAdditionalPopup() {
   const actions = document.querySelector(".ending-actions");
   if (modal) modal.remove();
   if (actions) actions.classList.remove("hidden");
+}
+
+function showAdditionalPopupBeforeTitle() {
+  document.body.insertAdjacentHTML("beforeend", renderAdditionalPopup());
+  bind("#close-guide", "click", () => {
+    const modal = document.querySelector(".modal-backdrop");
+    if (modal) modal.remove();
+    renderTitle();
+  });
+}
+
+function renderHomeConfirm() {
+  document.body.insertAdjacentHTML("beforeend", `
+    <div class="modal-backdrop" id="home-confirm" role="dialog" aria-modal="true" aria-labelledby="home-confirm-title">
+      <div class="modal compact-modal">
+        <h2 id="home-confirm-title">タイトルに戻りますか？</h2>
+        <div class="confirm-actions">
+          <button id="confirm-title" type="button">はい</button>
+          <button id="cancel-title" class="secondary" type="button">いいえ</button>
+        </div>
+      </div>
+    </div>
+  `);
+  bind("#confirm-title", "click", () => {
+    const modal = document.querySelector("#home-confirm");
+    if (modal) modal.remove();
+    renderTitle();
+  });
+  bind("#cancel-title", "click", () => {
+    const modal = document.querySelector("#home-confirm");
+    if (modal) modal.remove();
+  });
 }
 
 function playConfiguredAudio(path, fallbackMs) {
@@ -475,7 +500,66 @@ function playAudioLayer(paths) {
   });
 }
 
+function startRinging() {
+  stopRinging();
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    const context = new AudioContextClass();
+    const gain = context.createGain();
+    const oscA = context.createOscillator();
+    const oscB = context.createOscillator();
+    oscA.frequency.value = 880;
+    oscB.frequency.value = 1174;
+    oscA.type = "sine";
+    oscB.type = "triangle";
+    gain.gain.value = 0;
+    oscA.connect(gain);
+    oscB.connect(gain);
+    gain.connect(context.destination);
+    oscA.start();
+    oscB.start();
+    const pulse = () => {
+      const now = context.currentTime;
+      gain.gain.cancelScheduledValues(now);
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.18, now + 0.03);
+      gain.gain.setValueAtTime(0.18, now + 0.38);
+      gain.gain.linearRampToValueAtTime(0, now + 0.45);
+    };
+    pulse();
+    const interval = setInterval(pulse, 900);
+    currentRinger = { context, oscillators: [oscA, oscB], interval };
+  } catch {
+    currentRinger = null;
+  }
+}
+
+function stopRinging() {
+  if (!currentRinger) return;
+  clearInterval(currentRinger.interval);
+  currentRinger.oscillators.forEach((oscillator) => {
+    try {
+      oscillator.stop();
+    } catch {}
+  });
+  currentRinger.context.close().catch(() => {});
+  currentRinger = null;
+}
+
+function startVibration() {
+  if ("vibrate" in navigator) {
+    navigator.vibrate([450, 180, 450, 700, 450, 180, 450]);
+  }
+}
+
+function stopVibration() {
+  if ("vibrate" in navigator) navigator.vibrate(0);
+}
+
 function stopAudio() {
+  stopRinging();
+  stopVibration();
   if (!currentAudio) return;
   const audios = Array.isArray(currentAudio) ? currentAudio : [currentAudio];
   audios.forEach((audio) => {
