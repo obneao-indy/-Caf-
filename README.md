@@ -20,7 +20,7 @@ https://obneao-indy.github.io/-Caf-/
 
 音声ファイルを使う場合は以下の名前で `assets` に配置します。
 
-- `digicam_last_voice.mp3`
+- `ending1-temp.m4a`
 - `am-chase.mp3`
 - `am-detected.mp3`
 - `am-scream.wav`

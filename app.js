@@ -4,7 +4,7 @@ const CONFIG = {
   storageKey: "cafe-juju-experience-incident-v2",
   soundHorrorLink: "",
   assets: {
-    end1Audio: "./assets/digicam_last_voice.mp3",
+    end1Audio: "./assets/ending1-temp.m4a",
     end2Audios: [
       "./assets/am-chase.mp3",
       "./assets/am-detected.mp3",
@@ -193,6 +193,7 @@ function showSoundRecommendation() {
       <div class="sound-notice" role="status" aria-live="polite">
         <h1>音声ON推奨</h1>
         <p>このゲームは、音声を出してお楽しみください</p>
+        <span class="loading-text">ロード中……</span>
       </div>
     </section>
   `, "app");
@@ -493,33 +494,43 @@ function playConfiguredAudio(path, fallbackMs) {
   return new Promise((resolve) => {
     const audio = new Audio(path);
     currentAudio = audio;
+    audio.volume = 1;
     let resolved = false;
+    let fallback = null;
     const finish = () => {
       if (resolved) return;
       resolved = true;
+      if (fallback) clearTimeout(fallback);
       resolve();
     };
-    const fallback = setTimeout(finish, fallbackMs);
+    const scheduleFallback = (ms) => {
+      if (fallback) clearTimeout(fallback);
+      fallback = setTimeout(finish, ms);
+    };
+    scheduleFallback(fallbackMs);
+    audio.addEventListener("loadedmetadata", () => {
+      if (Number.isFinite(audio.duration) && audio.duration > 0) {
+        scheduleFallback((audio.duration * 1000) + 700);
+      }
+    });
     audio.addEventListener("ended", () => {
-      clearTimeout(fallback);
       finish();
     });
     audio.addEventListener("error", () => {
-      clearTimeout(fallback);
-      setTimeout(finish, fallbackMs);
+      scheduleFallback(fallbackMs);
     });
     audio.play().catch(() => {
-      clearTimeout(fallback);
-      setTimeout(finish, fallbackMs);
+      scheduleFallback(fallbackMs);
     });
   });
 }
 
 function playAudioLayer(paths) {
   stopAudio();
-  currentAudio = paths.map((path) => {
+  currentAudio = paths.flatMap((path) => [path, path]).map((path, index) => {
     const audio = new Audio(path);
     audio.volume = 1;
+    audio.currentTime = index % 2 === 0 ? 0 : 0.035;
     audio.play().catch(() => {});
     return audio;
   });
@@ -529,7 +540,7 @@ function startBgm() {
   if (!bgmAudio) {
     bgmAudio = new Audio(CONFIG.assets.bgm);
     bgmAudio.loop = true;
-    bgmAudio.volume = 1;
+    bgmAudio.volume = 0.04;
     bgmAudio.preload = "auto";
   }
   bgmAudio.play().catch(() => {});
@@ -566,8 +577,8 @@ function startRinging() {
       const now = context.currentTime;
       gain.gain.cancelScheduledValues(now);
       gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.18, now + 0.03);
-      gain.gain.setValueAtTime(0.18, now + 0.38);
+      gain.gain.linearRampToValueAtTime(0.12, now + 0.03);
+      gain.gain.setValueAtTime(0.12, now + 0.38);
       gain.gain.linearRampToValueAtTime(0, now + 0.45);
     };
     pulse();
