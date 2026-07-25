@@ -10,7 +10,7 @@ const CONFIG = {
       "./assets/am-detected.mp3",
       "./assets/am-scream.wav"
     ],
-    bgm: "./assets/cafe1f-bgm-loop.wav",
+    bgm: "./assets/cafe1f-bgm-loop-v2.wav",
     titleLogo: "./assets/title-logo.png"
   },
   altar: {
@@ -154,6 +154,7 @@ function render() {
 function startGame() {
   state.started = true;
   saveState();
+  startBgm();
   renderIntro();
 }
 
@@ -528,7 +529,8 @@ function startBgm() {
   if (!bgmAudio) {
     bgmAudio = new Audio(CONFIG.assets.bgm);
     bgmAudio.loop = true;
-    bgmAudio.volume = 0.42;
+    bgmAudio.volume = 1;
+    bgmAudio.preload = "auto";
   }
   bgmAudio.play().catch(() => {});
 }
