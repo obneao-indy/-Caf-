@@ -577,8 +577,8 @@ function startRinging() {
       const now = context.currentTime;
       gain.gain.cancelScheduledValues(now);
       gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.12, now + 0.03);
-      gain.gain.setValueAtTime(0.12, now + 0.38);
+      gain.gain.linearRampToValueAtTime(0.22, now + 0.03);
+      gain.gain.setValueAtTime(0.22, now + 0.38);
       gain.gain.linearRampToValueAtTime(0, now + 0.45);
     };
     pulse();
