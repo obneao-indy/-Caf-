@@ -73,6 +73,7 @@ let lastMessage = "";
 let busy = false;
 let currentAudio = null;
 let currentRinger = null;
+let currentVibrationInterval = null;
 
 render();
 
@@ -179,7 +180,21 @@ function renderIntro() {
     const button = document.querySelector("#begin-work");
     if (button) button.classList.remove("hidden");
   }, 900);
-  bind("#begin-work", "click", () => renderHome("管理番号を入力してください。"));
+  bind("#begin-work", "click", showSoundRecommendation);
+}
+
+function showSoundRecommendation() {
+  setView(`
+    <section class="intro-screen">
+      <div class="sound-notice" role="status" aria-live="polite">
+        <h1>音声ON推奨</h1>
+        <p>このゲームは、音声を出してお楽しみください</p>
+      </div>
+    </section>
+  `, "app");
+  setTimeout(() => {
+    renderHome("管理番号を入力してください。");
+  }, 6000);
 }
 
 function renderHome(message = "") {
@@ -343,8 +358,10 @@ function startEnd2() {
   overlay.className = "red-room active";
   document.body.appendChild(overlay);
   playAudioLayer(CONFIG.assets.end2Audios);
+  startHeavyVibration();
   setTimeout(() => {
     stopAudio();
+    stopVibration();
     overlay.remove();
     state.redRoomExperienced = true;
     addEnding("END_2");
@@ -553,7 +570,21 @@ function startVibration() {
   }
 }
 
+function startHeavyVibration() {
+  stopVibration();
+  if (!("vibrate" in navigator)) return;
+  const pattern = [280, 60, 280, 60, 520, 90, 220, 50, 220];
+  navigator.vibrate(pattern);
+  currentVibrationInterval = setInterval(() => {
+    navigator.vibrate(pattern);
+  }, 1800);
+}
+
 function stopVibration() {
+  if (currentVibrationInterval) {
+    clearInterval(currentVibrationInterval);
+    currentVibrationInterval = null;
+  }
   if ("vibrate" in navigator) navigator.vibrate(0);
 }
 

@@ -168,6 +168,33 @@ button.ghost {
   margin-top: 22px;
 }
 
+.sound-notice {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  width: min(100%, 360px);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 7px;
+  padding: 24px 18px;
+  background: rgba(10,10,10,0.96);
+  box-shadow: 0 0 42px rgba(180, 0, 0, 0.22);
+  text-align: center;
+}
+
+.sound-notice h1 {
+  margin: 0;
+  color: #ffdfdf;
+  font-size: 24px;
+  line-height: 1.25;
+}
+
+.sound-notice p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
 .brand-logo {
   display: block;
   width: min(100%, 430px);
