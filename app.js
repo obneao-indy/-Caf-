@@ -10,6 +10,7 @@ const CONFIG = {
       "./assets/am-detected.mp3",
       "./assets/am-scream.wav"
     ],
+    bgm: "./assets/cafe1f-bgm-loop.wav",
     titleLogo: "./assets/title-logo.png"
   },
   altar: {
@@ -74,6 +75,7 @@ let busy = false;
 let currentAudio = null;
 let currentRinger = null;
 let currentVibrationInterval = null;
+let bgmAudio = null;
 
 render();
 
@@ -184,6 +186,7 @@ function renderIntro() {
 }
 
 function showSoundRecommendation() {
+  startBgm();
   setView(`
     <section class="intro-screen">
       <div class="sound-notice" role="status" aria-live="polite">
@@ -198,6 +201,7 @@ function showSoundRecommendation() {
 }
 
 function renderHome(message = "") {
+  resumeBgm();
   updateAllChecked();
   saveState();
   const msg = message || "管理番号を入力してください。";
@@ -298,6 +302,7 @@ function onSubmitCode(event) {
 }
 
 function renderCall() {
+  pauseBgm();
   stopAudio();
   startRinging();
   startVibration();
@@ -373,6 +378,7 @@ function startEnd2() {
 }
 
 function unlockAdditionalRecord() {
+  pauseBgm();
   state.additionalRecordViewed = true;
   addEnding("END_3");
   saveState();
@@ -404,6 +410,7 @@ function unlockAdditionalRecord() {
 }
 
 function renderEnding(id) {
+  pauseBgm();
   const ending = ENDINGS[id];
   setView(`
     <section class="screen ending">
@@ -515,6 +522,23 @@ function playAudioLayer(paths) {
     audio.play().catch(() => {});
     return audio;
   });
+}
+
+function startBgm() {
+  if (!bgmAudio) {
+    bgmAudio = new Audio(CONFIG.assets.bgm);
+    bgmAudio.loop = true;
+    bgmAudio.volume = 0.42;
+  }
+  bgmAudio.play().catch(() => {});
+}
+
+function pauseBgm() {
+  if (bgmAudio) bgmAudio.pause();
+}
+
+function resumeBgm() {
+  if (bgmAudio) bgmAudio.play().catch(() => {});
 }
 
 function startRinging() {
