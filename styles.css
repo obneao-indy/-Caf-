@@ -836,6 +836,104 @@ button.ghost {
   text-align: center;
 }
 
+.epilogue-added-screen {
+  display: grid;
+  align-content: center;
+  gap: 14px;
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(175, 0, 0, 0.22), transparent 18rem),
+    #050505;
+}
+
+.epilogue-added-screen h1 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 24px;
+  line-height: 1.45;
+}
+
+.epilogue-menu-screen,
+.epilogue-text-screen {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  height: 100svh;
+  min-height: 0;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(100,0,0,0.16), transparent 16rem),
+    #070707;
+}
+
+.epilogue-header h1 {
+  margin: 0 0 6px;
+  font-size: 25px;
+}
+
+.epilogue-header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.epilogue-list {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.epilogue-row {
+  display: grid;
+  justify-items: start;
+  min-height: 64px;
+  padding: 11px 12px;
+  border-color: rgba(255,255,255,0.14);
+  background: rgba(18,18,18,0.92);
+  color: var(--ink);
+  text-align: left;
+}
+
+.epilogue-row span {
+  font-size: 15px;
+}
+
+.epilogue-row small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.epilogue-row.locked {
+  opacity: 0.48;
+}
+
+.epilogue-document {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.epilogue-code {
+  margin: 0 0 8px;
+  color: var(--red-2);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.epilogue-document h1 {
+  margin: 0 0 16px;
+  font-size: 20px;
+  line-height: 1.35;
+}
+
+.epilogue-body {
+  white-space: pre-line;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.95;
+}
+
 .toast.show {
   display: block;
 }

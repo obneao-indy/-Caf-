@@ -65,6 +65,89 @@ const ENDINGS = {
   END_3: { code: "END 3", title: "流入記録", result: "COMPLETE" }
 };
 
+const EPILOGUES = [
+  {
+    id: "END_1",
+    label: "ED.1 エピローグ",
+    condition: "電話に出た",
+    text: `点検作業中、突然掛かってきた電話。
+
+「発信者不明」と表示された不気味な画面を暫し眺めて、なんとなく、電話を取ることにした。
+
+電話の向こうから聞こえてきたのは、少女の声だった。
+
+その幼い声には似つかわしくない、自責や自律に満ちた少女の言葉・・・
+
+胸を刺すような憐憫に引き込まれそうになる。
+
+一体この子は"誰"で、何故電話を掛けてきたのか、何故自分に掛かってきたのか・・・
+
+それに出て・・・良かったのだろうか・・・`
+  },
+  {
+    id: "END_2",
+    label: "ED.2 エピローグ",
+    condition: "電話を拒否",
+    text: `点検作業中、突然掛かってきた電話。
+
+「発信者不明」と表示された不気味な画面を暫し眺めて、畏れを感じ、電話を切った。
+
+「一体何だったのだろう」
+
+そんな言葉を頭の中に浮かべるかどうか、
+突然、見慣れたスマートフォンの画面が真っ赤なノイズに包まれた。
+
+また次の瞬間には、人間叫び声とも獣の咆哮ともつかない、悍ましい音が響き渡った。
+
+跳ね上げた心臓を抑えながら、
+何かを思い出す。
+
+身体をめちゃくちゃに振り乱しながら、狭い廊下の中を追いかけてくる・・・
+
+赤いマントに身を包んだ、何か
+
+覚えのない記憶が、画面から流れ込んでくるような感覚。
+
+頭がクラクラする。
+
+なんで、こんな電話・・・出れば良かったのか？
+
+だって・・・怖かったから・・・`
+  },
+  {
+    id: "END_3",
+    label: "exED.1 エピローグ",
+    condition: "SRの祭壇を入力",
+    text: CONFIG.additionalRecord
+  },
+  {
+    id: "HIDDEN_2",
+    label: "exED.2 エピローグ",
+    condition: "全項目が埋まる",
+    text: `項目を全て埋め、業務を完了した。
+
+「体験」という名目でこの店を見て周り、このゲームを通じてスタッフの仕事の一部を垣間見た。
+
+「業務」なんて言葉には似つかわしくない軽作業だったなと思う。
+
+ただ、"見て"周るだけだなんて・・・
+
+なんで、最後までやろうと思ったんだろう、あんな電話まで掛かってきたのに、
+
+いや、答えは単純だ。
+
+これは"ゲーム"だから、このエピローグも物語の一部だから、
+
+現実なんてここには一つもないから。
+
+だけど、物語に触れている間
+
+考えていたことは、浮かんだ感想は、
+
+現実以外の何物でもないのだと・・・思う。`
+  }
+];
+
 const app = document.querySelector("#app");
 const toast = document.querySelector("#toast");
 const inspectionByKey = new Map(CONFIG.inspections.map((item) => [normalizeCode(item.code), item]));
@@ -90,6 +173,7 @@ function defaultState() {
     additionalRecordViewed: false,
     allInspectionPointsCompleted: false,
     hiddenEnding2Completed: false,
+    seenEpilogueNotices: [],
     staffSignature: "",
     autoCallTriggered: false,
     updatedAt: null
@@ -171,11 +255,13 @@ function renderTitle() {
       <div class="title-visual" aria-label="体験事件"></div>
       <div class="title-actions">
         <button id="start" type="button">スタート</button>
+        <button id="epilogue" class="secondary" type="button">エピローグ</button>
         ${endingCount() > 0 ? `<button id="receive-call" class="secondary" type="button">着信を受ける</button>` : ""}
       </div>
     </section>
   `, "app");
   bind("#start", "click", startGame);
+  bind("#epilogue", "click", renderEpilogueMenu);
   bind("#receive-call", "click", () => renderCall());
 }
 
@@ -512,7 +598,9 @@ function finalizeSignature(name) {
     </section>
   `);
   setTimeout(() => {
-    location.href = url;
+    showEpilogueNotice("HIDDEN_2", () => {
+      location.href = url;
+    });
   }, 1200);
 }
 
@@ -531,11 +619,15 @@ function renderEnding(id) {
   `);
   bind("#back-main", "click", () => {
     if (id === "END_3" && allDutiesReady() && !state.hiddenEnding2Completed) {
-      renderAllDutiesComplete();
+      showEpilogueNotice("END_3", renderAllDutiesComplete);
+      return;
+    }
+    if (id === "END_3") {
+      showEpilogueNotice("END_3", renderTitle);
       return;
     }
     if (id === "END_1" || id === "END_2") {
-      showAdditionalPopupBeforeTitle();
+      showAdditionalPopupBeforeTitle(id);
       return;
     }
     renderTitle();
@@ -566,13 +658,101 @@ function closeAdditionalPopup() {
   if (actions) actions.classList.remove("hidden");
 }
 
-function showAdditionalPopupBeforeTitle() {
+function showAdditionalPopupBeforeTitle(endingId) {
   document.body.insertAdjacentHTML("beforeend", renderAdditionalPopup());
   bind("#close-guide", "click", () => {
     const modal = document.querySelector(".modal-backdrop");
     if (modal) modal.remove();
-    renderTitle();
+    showEpilogueNotice(endingId, renderTitle);
   });
+}
+
+function unlockedEpilogues() {
+  return EPILOGUES.filter((item) => {
+    if (item.id === "HIDDEN_2") return state.hiddenEnding2Completed;
+    return hasEnding(item.id);
+  });
+}
+
+function hasSeenEpilogueNotice(id) {
+  return Array.isArray(state.seenEpilogueNotices) && state.seenEpilogueNotices.includes(id);
+}
+
+function markEpilogueNoticeSeen(id) {
+  if (!Array.isArray(state.seenEpilogueNotices)) state.seenEpilogueNotices = [];
+  if (!state.seenEpilogueNotices.includes(id)) {
+    state.seenEpilogueNotices.push(id);
+    saveState();
+  }
+}
+
+function showEpilogueNotice(id, next) {
+  if (!EPILOGUES.some((item) => item.id === id) || hasSeenEpilogueNotice(id)) {
+    next();
+    return;
+  }
+  markEpilogueNoticeSeen(id);
+  setView(`
+    <section class="screen epilogue-added-screen">
+      <h1>新しいエンディングエピローグが追加されました。</h1>
+      <p class="body-text">タイトル画面からご確認いただけます。</p>
+      <div class="actions">
+        <button id="continue-after-epilogue-notice" type="button">確認する</button>
+      </div>
+    </section>
+  `);
+  bind("#continue-after-epilogue-notice", "click", next);
+}
+
+function renderEpilogueMenu() {
+  pauseBgm();
+  const rows = EPILOGUES.map((item) => {
+    const unlocked = unlockedEpilogues().some((entry) => entry.id === item.id);
+    return `
+      <button class="epilogue-row ${unlocked ? "" : "locked"}" type="button" data-epilogue-id="${item.id}" ${unlocked ? "" : "disabled"}>
+        <span>${escapeHtml(item.label)}</span>
+        <small>${unlocked ? escapeHtml(item.condition) : "未開放"}</small>
+      </button>
+    `;
+  }).join("");
+
+  setView(`
+    <section class="screen epilogue-menu-screen">
+      <header class="epilogue-header">
+        <h1>エピローグ</h1>
+        <p>解放済みの記録を選択してください。</p>
+      </header>
+      <div class="epilogue-list">${rows}</div>
+      <div class="actions">
+        <button id="back-title" class="secondary" type="button">タイトルへ</button>
+      </div>
+    </section>
+  `);
+  document.querySelectorAll("[data-epilogue-id]").forEach((button) => {
+    button.addEventListener("click", () => renderEpilogueText(button.dataset.epilogueId));
+  });
+  bind("#back-title", "click", renderTitle);
+}
+
+function renderEpilogueText(id) {
+  const item = unlockedEpilogues().find((entry) => entry.id === id);
+  if (!item) {
+    renderEpilogueMenu();
+    return;
+  }
+  setView(`
+    <section class="screen epilogue-text-screen">
+      <article class="terminal section epilogue-document">
+        <p class="epilogue-code">${escapeHtml(item.label)}</p>
+        <h1>${escapeHtml(item.condition)}</h1>
+        <div class="epilogue-body">${escapeHtml(item.text)}</div>
+      </article>
+      <div class="actions">
+        <button id="back-epilogue-menu" type="button">一覧へ戻る</button>
+      </div>
+    </section>
+  `);
+  bind("#back-epilogue-menu", "click", renderEpilogueMenu);
 }
 
 function renderHomeConfirm() {
