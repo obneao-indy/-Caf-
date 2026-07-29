@@ -253,7 +253,7 @@ function renderTitle() {
   const hasEpilogues = unlockedEpilogues().length > 0;
   setView(`
     <section class="title-screen">
-      <p class="collab-kicker">チラズアート×呪物cafeジュジュ</p>
+      <p class="collab-kicker">チラズアート×呪物Caféジュジュ</p>
       <div class="title-visual" aria-label="体験事件"></div>
       <div class="title-actions">
         <button id="start" type="button">スタート</button>
@@ -394,11 +394,10 @@ function onSubmitCode(event) {
     state.autoCallTriggered = true;
     saveState();
     busy = true;
-    showToast("必要点検数を満たしました。\n業務完了処理を開始します。");
     setTimeout(() => {
       busy = false;
       renderCall();
-    }, 1400);
+    }, 650);
   } else if (state.allInspectionPointsCompleted) {
     if (allDutiesReady() && !state.hiddenEnding2Completed) {
       setTimeout(renderAllDutiesComplete, 900);
@@ -869,10 +868,13 @@ function startRinging() {
       const now = context.currentTime;
       gain.gain.cancelScheduledValues(now);
       gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.22, now + 0.03);
-      gain.gain.setValueAtTime(0.22, now + 0.38);
+      gain.gain.linearRampToValueAtTime(0.36, now + 0.03);
+      gain.gain.setValueAtTime(0.36, now + 0.42);
       gain.gain.linearRampToValueAtTime(0, now + 0.45);
     };
+    if (context.state === "suspended") {
+      context.resume().catch(() => {});
+    }
     pulse();
     const interval = setInterval(pulse, 900);
     currentRinger = { context, oscillators: [oscA, oscB], interval };
