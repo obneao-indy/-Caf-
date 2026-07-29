@@ -3,6 +3,7 @@
 const CONFIG = {
   storageKey: "cafe-juju-experience-incident-v2",
   soundHorrorLink: "",
+  memberCardReturnUrl: "https://obneao-indy.github.io/juju-members-card/special-cards",
   assets: {
     end1Audio: "./assets/ending1-temp.m4a",
     end2Audios: [
@@ -88,6 +89,8 @@ function defaultState() {
     redRoomExperienced: false,
     additionalRecordViewed: false,
     allInspectionPointsCompleted: false,
+    hiddenEnding2Completed: false,
+    staffSignature: "",
     autoCallTriggered: false,
     updatedAt: null
   };
@@ -130,6 +133,10 @@ function addEnding(id) {
 
 function updateAllChecked() {
   state.allInspectionPointsCompleted = discoveredCount() === CONFIG.inspections.length;
+}
+
+function allDutiesReady() {
+  return state.allInspectionPointsCompleted && state.additionalRecordViewed;
 }
 
 function displayName(item) {
@@ -205,6 +212,11 @@ function showSoundRecommendation() {
 function renderHome(message = "") {
   resumeBgm();
   updateAllChecked();
+  if (allDutiesReady() && !state.hiddenEnding2Completed) {
+    saveState();
+    renderAllDutiesComplete();
+    return;
+  }
   saveState();
   const msg = message || "管理番号を入力してください。";
   setView(`
@@ -299,7 +311,11 @@ function onSubmitCode(event) {
       renderCall();
     }, 1400);
   } else if (state.allInspectionPointsCompleted) {
-    showToast("全点検項目を確認しました。\nALL CHECKED");
+    if (allDutiesReady() && !state.hiddenEnding2Completed) {
+      setTimeout(renderAllDutiesComplete, 900);
+    } else {
+      showToast("全点検項目を確認しました。\nALL CHECKED");
+    }
   }
 }
 
@@ -411,6 +427,95 @@ function unlockAdditionalRecord() {
   bind("#show-end3", "click", () => renderEnding("END_3"));
 }
 
+function renderAllDutiesComplete() {
+  pauseBgm();
+  setView(`
+    <section class="screen all-complete-screen">
+      <div class="official-mark">Caféジュジュ 店内点検業務</div>
+      <h1>すべての業務を完了しました</h1>
+      <p class="body-text">点検記録と追加点検記録の確認が完了しました。</p>
+      <div class="actions">
+        <button id="report-duty" type="button">報告する</button>
+      </div>
+    </section>
+  `);
+  bind("#report-duty", "click", renderCertificateEntry);
+}
+
+function renderCertificateEntry() {
+  const existingName = state.staffSignature || "";
+  setView(`
+    <section class="screen certificate-screen">
+      <article class="certificate">
+        <div class="certificate-office">Caféジュジュ 業務管理課</div>
+        <h1>業務完了証明書</h1>
+        <p class="certificate-lead">下記スタッフ体験者は、店内点検業務および追加点検記録の確認を完了したことを証明します。</p>
+        <dl class="certificate-lines">
+          <div><dt>業務名</dt><dd>体験事件 店内点検業務</dd></div>
+          <div><dt>確認項目</dt><dd>通常点検 12項目 / 追加点検 1項目</dd></div>
+          <div><dt>発行日</dt><dd>${escapeHtml(formatDate(new Date()))}</dd></div>
+        </dl>
+        <label class="signature-field">
+          <span>記名欄</span>
+          <input id="staff-signature" type="text" maxlength="6" autocomplete="off" value="${escapeHtml(existingName)}" ${existingName ? "disabled" : ""} placeholder="6文字以内">
+        </label>
+        <p class="certificate-note">記名後、この名前は専用の特別カードに反映されます。</p>
+        <div class="certificate-stamp">確認済</div>
+      </article>
+      <div class="actions">
+        <button id="submit-signature" type="button" ${existingName ? "disabled" : ""}>入力完了</button>
+      </div>
+    </section>
+  `);
+  bind("#submit-signature", "click", confirmSignature);
+}
+
+function confirmSignature() {
+  const input = document.querySelector("#staff-signature");
+  const name = (input ? input.value : "").trim().slice(0, 6);
+  if (!name) {
+    showToast("ニックネームを入力してください。");
+    return;
+  }
+  document.body.insertAdjacentHTML("beforeend", `
+    <div class="modal-backdrop" id="signature-confirm" role="dialog" aria-modal="true" aria-labelledby="signature-confirm-title">
+      <div class="modal compact-modal">
+        <h2 id="signature-confirm-title">一度入力すると変更できません。<br>この名前でいいですか？</h2>
+        <p class="signature-preview">${escapeHtml(name)}</p>
+        <div class="confirm-actions">
+          <button id="confirm-signature" type="button">はい</button>
+          <button id="cancel-signature" class="secondary" type="button">いいえ</button>
+        </div>
+      </div>
+    </div>
+  `);
+  bind("#confirm-signature", "click", () => finalizeSignature(name));
+  bind("#cancel-signature", "click", () => {
+    const modal = document.querySelector("#signature-confirm");
+    if (modal) modal.remove();
+  });
+}
+
+function finalizeSignature(name) {
+  state.staffSignature = name;
+  state.hiddenEnding2Completed = true;
+  state.completionStampGranted = true;
+  saveState();
+  localStorage.setItem("JUJU_CHILLAS_STAFF_SIGNATURE", name);
+  const url = `${CONFIG.memberCardReturnUrl}?chillas_staff_signature=${encodeURIComponent(name)}`;
+  setView(`
+    <section class="screen ending">
+      <div class="ending-code">隠しエンディング 2</div>
+      <h1>業務完了証明</h1>
+      <div class="clear">COMPLETE</div>
+      <p class="body-text">記名を受理しました。</p>
+    </section>
+  `);
+  setTimeout(() => {
+    location.href = url;
+  }, 1200);
+}
+
 function renderEnding(id) {
   pauseBgm();
   const ending = ENDINGS[id];
@@ -425,6 +530,10 @@ function renderEnding(id) {
     </section>
   `);
   bind("#back-main", "click", () => {
+    if (id === "END_3" && allDutiesReady() && !state.hiddenEnding2Completed) {
+      renderAllDutiesComplete();
+      return;
+    }
     if (id === "END_1" || id === "END_2") {
       showAdditionalPopupBeforeTitle();
       return;
@@ -650,4 +759,11 @@ function escapeHtml(value) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+function formatDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}年${month}月${day}日`;
 }
