@@ -250,12 +250,14 @@ function startGame() {
 }
 
 function renderTitle() {
+  const hasEpilogues = unlockedEpilogues().length > 0;
   setView(`
     <section class="title-screen">
+      <p class="collab-kicker">チラズアート×呪物cafeジュジュ</p>
       <div class="title-visual" aria-label="体験事件"></div>
       <div class="title-actions">
         <button id="start" type="button">スタート</button>
-        <button id="epilogue" class="secondary" type="button">エピローグ</button>
+        ${hasEpilogues ? `<button id="epilogue" class="secondary" type="button">エピローグ</button>` : ""}
         ${endingCount() > 0 ? `<button id="receive-call" class="secondary" type="button">着信を受ける</button>` : ""}
       </div>
     </section>
@@ -284,8 +286,9 @@ function showSoundRecommendation() {
   setView(`
     <section class="intro-screen">
       <div class="sound-notice" role="status" aria-live="polite">
-        <h1>音声ON推奨</h1>
+        <h1>イヤホン推奨</h1>
         <p>このゲームは、音声を出してお楽しみください</p>
+        <small>このゲームは大きな音が出る可能性があります</small>
         <span class="loading-text">ロード中……</span>
       </div>
     </section>

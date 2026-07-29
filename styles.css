@@ -118,28 +118,38 @@ button.ghost {
 
 .title-screen {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
-  gap: 18px;
+  align-content: center;
+  gap: 12px;
   min-height: 100svh;
   width: min(100%, 520px);
   margin: 0 auto;
-  padding: max(18px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+  padding: max(22px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
   background:
     radial-gradient(circle at 50% 16%, rgba(160,0,0,0.24), transparent 18rem),
     linear-gradient(180deg, #050505, #0b0b0b 58%, #050505);
 }
 
+.collab-kicker {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
 .title-visual {
-  min-height: 0;
+  width: 100%;
+  height: clamp(250px, 52svh, 430px);
   border-bottom: 1px solid rgba(255,255,255,0.08);
   background:
-    linear-gradient(180deg, rgba(0,0,0,0), #050505 95%),
-    url("./assets/title-logo.png") center top / contain no-repeat;
+    linear-gradient(180deg, rgba(0,0,0,0.02), #050505 96%),
+    url("./assets/title-logo.png") center center / contain no-repeat;
 }
 
 .title-actions {
   display: grid;
   gap: 10px;
+  margin-top: 8px;
 }
 
 .intro-screen {
@@ -193,6 +203,12 @@ button.ghost {
   color: var(--muted);
   font-size: 15px;
   line-height: 1.7;
+}
+
+.sound-notice small {
+  color: #d6c9bd;
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .loading-text {
