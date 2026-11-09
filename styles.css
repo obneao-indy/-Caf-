@@ -879,11 +879,13 @@ button.ghost {
 .epilogue-menu-screen,
 .epilogue-text-screen {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: none;
+  align-content: start;
   gap: 14px;
-  height: 100svh;
-  min-height: 0;
-  overflow: hidden;
+  height: auto;
+  min-height: 100svh;
+  overflow: visible;
+  padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
   background:
     linear-gradient(180deg, rgba(100,0,0,0.16), transparent 16rem),
     #070707;
@@ -934,7 +936,7 @@ button.ghost {
 
 .epilogue-document {
   min-height: 0;
-  overflow-y: auto;
+  overflow: visible;
 }
 
 .epilogue-code {

@@ -5,7 +5,7 @@ const CONFIG = {
   soundHorrorLink: "",
   memberCardReturnUrl: "https://obneao-indy.github.io/juju-members-card/special-cards",
   assets: {
-    end1Audio: "./assets/ending1-temp.m4a",
+    end1Audio: "./assets/ending1-mitsuka.m4a",
     end2Audios: [
       "./assets/am-chase.mp3",
       "./assets/am-detected.mp3",
